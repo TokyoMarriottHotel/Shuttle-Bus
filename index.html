@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シャトルバス運行情報 Pro</title>
+    <style>
+        :root { --primary: #007AFF; --bg: #F2F2F7; --card: #FFFFFF; }
+        body { font-family: "Helvetica Neue", Arial, sans-serif; background: var(--bg); margin: 0; padding: 20px; padding-bottom: 50px; color: #333; }
+        .container { max-width: 600px; margin: auto; }
+        .card { background: var(--card); border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        
+        /* PiPボタン */
+        .pip-btn {
+            background: #1c1c1e; color: white; border: none; padding: 15px;
+            border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer;
+            margin-bottom: 20px; font-size: 1rem; transition: 0.3s;
+        }
+        .pip-btn:active { transform: scale(0.98); background: #000; }
+
+        h2 { font-size: 1.1rem; margin-top: 0; border-bottom: 1px solid #EEE; padding-bottom: 10px; }
+        .status-tag { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; margin-bottom: 15px; }
+        .weekday { background: #E3F2FD; color: #1976D2; }
+        .weekend { background: #FFEBEE; color: #D32F2F; }
+        
+        .result-row { display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px; }
+        .loc-box { border-left: 5px solid var(--primary); padding-left: 15px; }
+        .loc-name { font-size: 0.85rem; color: #666; font-weight: bold; }
+        .time-display { font-size: 2rem; font-weight: 800; color: var(--primary); }
+        .error-text { font-size: 1rem; color: #D32F2F; font-weight: bold; line-height: 1.4; }
+
+        textarea { width: 100%; height: 80px; border: 1px solid #DDD; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 0.9rem; box-sizing: border-box; }
+        label { display: block; margin: 15px 0 5px; font-weight: bold; font-size: 0.85rem; }
+        
+        /* 祝日トグル */
+        .toggle-section { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 20px; border-radius: 12px; border: 1px solid #DDD; margin-bottom: 20px; }
+
+        canvas, video { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <button class="pip-btn" onclick="togglePiP()">
+        🖥️ 常に最前面で表示 (子画面モード)
+    </button>
+
+    <div class="card">
+        <div id="dayTypeTag" class="status-tag">取得中...</div>
+        <div class="result-row">
+            <div class="loc-box">
+                <div class="loc-name">品川駅 発 (Shinagawa)</div>
+                <div id="nextS" class="time-display">--:--</div>
+            </div>
+            <div class="loc-box">
+                <div class="loc-name">ホテル 発 (Hotel)</div>
+                <div id="nextH" class="time-display">--:--</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toggle-section">
+        <span style="font-weight: bold;">今日は祝日ですか？</span>
+        <input type="checkbox" id="holidayManual" onchange="update()">
+    </div>
+
+    <div class="card">
+        <h2>時刻表設定</h2>
+        <label>📅 平日 - 品川駅：</label>
+        <textarea id="s_weekday">07:54, 08:08, 08:22, 08:36, 08:51, 09:07, 09:23, 09:39, 09:56, 10:14, 10:48, 11:22, 11:56, 12:30, 13:04, 13:38, 14:12, 14:46, 15:20, 15:54, 16:27, 17:00, 17:32, 18:03, 18:34, 19:06</textarea>
+
+        <label>📅 平日 - ホテル：</label>
+        <textarea id="h_weekday">07:57, 08:11, 08:25, 08:40, 08:55, 09:11, 09:28, 09:46, 10:20, 10:54, 11:28, 12:02, 12:36, 13:10, 13:44, 14:18, 14:52, 15:26, 16:00, 16:34, 17:06, 17:37, 18:08, 18:39, 19:10</textarea>
+
+        <label style="margin-top:20px;">🎉 土日祝 - 品川駅：</label>
+        <textarea id="s_weekend">09:27, 10:00, 10:34, 11:08, 11:42, 12:16, 12:50, 13:24, 13:58, 14:32, 15:06, 15:40, 16:14, 16:48, 17:22, 17:56, 18:31, 19:06</textarea>
+
+        <label>🎉 土日祝 - ホテル：</label>
+        <textarea id="h_weekend">09:01, 09:33, 10:06, 10:40, 11:14, 11:48, 12:22, 12:56, 13:30, 14:04, 14:38, 15:12, 15:46, 16:20, 16:54, 17:28, 18:02, 18:36, 19:10</textarea>
+    </div>
+
+    <div style="text-align: center; color: #999; font-size: 0.8rem;">
+        現在時刻: <span id="clock"></span>
+    </div>
+</div>
+
+<canvas id="pipCanvas" width="320" height="180"></canvas>
+<video id="pipVideo" autoplay muted playsinline></video>
+
+<script>
+    let currentNextS = "--:--";
+    let currentNextH = "--:--";
+
+    function getNextBus(textareaId) {
+        const raw = document.getElementById(textareaId).value;
+        const times = raw.split(/[\s,，]+/).filter(t => t.match(/^([01]\d|2[0-3]):([0-5]\d)$/)).sort();
+        const now = new Date();
+        const nowStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        
+        const next = times.find(t => t > nowStr);
+        return next || "終便終了";
+    }
+
+    function update() {
+        const now = new Date();
+        const day = now.getDay(); // 0:日, 6:土
+        const isHoliday = document.getElementById('holidayManual').checked;
+        const isWeekend = (day === 0 || day === 6 || isHoliday);
+
+        const tag = document.getElementById('dayTypeTag');
+        tag.innerText = isWeekend ? "本日：土日祝ダイヤ" : "本日：平日ダイヤ";
+        tag.className = "status-tag " + (isWeekend ? "weekend" : "weekday");
+
+        const sId = isWeekend ? 's_weekend' : 's_weekday';
+        const hId = isWeekend ? 'h_weekend' : 'h_weekday';
+
+        currentNextS = getNextBus(sId);
+        currentNextH = getNextBus(hId);
+
+        const sDisp = document.getElementById('nextS');
+        const hDisp = document.getElementById('nextH');
+
+        const errMsg = "【申し訳ございません、終便は既に出発されました】";
+        sDisp.innerText = currentNextS === "終便終了" ? errMsg : currentNextS;
+        hDisp.innerText = currentNextH === "終便終了" ? errMsg : currentNextH;
+        
+        sDisp.className = currentNextS === "終便終了" ? "error-text" : "time-display";
+        hDisp.className = currentNextH === "終便終了" ? "error-text" : "time-display";
+
+        document.getElementById('clock').innerText = now.toLocaleTimeString('ja-JP');
+        
+        drawCanvas();
+    }
+
+    // PiP用の描画
+    const canvas = document.getElementById('pipCanvas');
+    const ctx = canvas.getContext('2d');
+    const video = document.getElementById('pipVideo');
+
+    function drawCanvas() {
+        ctx.fillStyle = "#1c1c1e";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = "#007AFF";
+        ctx.font = "bold 18px sans-serif";
+        ctx.fillText("NEXT SHUTTLE", 20, 40);
+
+        ctx.fillStyle = "#AAA";
+        ctx.font = "14px sans-serif";
+        ctx.fillText("Shinagawa Sta.", 20, 75);
+        ctx.fillText("Hotel", 20, 130);
+
+        ctx.fillStyle = "#FFF";
+        ctx.font = "bold 32px monospace";
+        ctx.fillText(currentNextS, 20, 105);
+        ctx.fillText(currentNextH, 20, 160);
+    }
+
+    async function togglePiP() {
+        try {
+            if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+            } else {
+                const stream = canvas.captureStream(10); // 10fps
+                video.srcObject = stream;
+                await video.play();
+                await video.requestPictureInPicture();
+            }
+        } catch (e) {
+            alert("このブラウザはPiPに対応していません（Chrome/Edge推奨）");
+        }
+    }
+
+    setInterval(update, 1000);
+    update();
+</script>
+
+</body>
+</html>
