@@ -53,47 +53,17 @@
         .fs-time { font-size: 30vw; font-weight: bold; line-height: 1; font-family: "Effra", sans-serif; }
 
       /* 全画面用時刻表リスト */
-        #fsTimetableList {
-    display: none;
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.95);
-    padding: 40px;
-    box-sizing: border-box;
-    overflow-y: auto;
-    text-align: center;
-}
+        #fsTimetableList { display: none; position: absolute;  top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); padding: 40px;
+    box-sizing: border-box; overflow-y: auto; text-align: center;}
 
 /* 時刻表グリッド */
-.list-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 15px;
-    margin-top: 30px;
-    max-width: 900px;
-    margin-left: auto;
-    margin-right: auto;
-}
+.list-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;  margin-top: 30px; max-width: 900px; margin-left: auto; margin-right: auto;}
 
 /* 各便カード */
-.time-item {
-    background: #333;
-    color: var(--m-gold);
-    padding: 12px 0;
-    border-radius: 10px;
-    font-size: 1.6rem;
-    font-weight: bold;
-}
+.time-item { background: #333; color: var(--m-gold); padding: 12px 0; border-radius: 10px; font-size: 1.6rem; font-weight: bold;}
 
 /* 出発済み */
-.passed {
-    opacity: 0.3;
-    color: #999;
-    background: #222;
-    font-weight: normal;
-}
+.passed { opacity: 0.3; color: #999; background: #222; font-weight: normal;}
        
         canvas, video { display: none; }
     </style>
