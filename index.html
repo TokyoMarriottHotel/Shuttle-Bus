@@ -52,13 +52,15 @@
         .fs-label { font-size: 1.2rem; letter-spacing: 5px; color: var(--m-gold); margin-bottom: 10px; }
         .fs-time { font-size: 30vw; font-weight: bold; line-height: 1; font-family: "Effra", sans-serif; }
 
-        /* 全画面用時刻表リスト */
-        #fsTimetableList {
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); overflow-y: auto; padding: 50px 20px; box-sizing: border-box;
+        /* 時刻表リスト表示 (タップで出現) */
+        #timetableList {
+            display: none; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.95); padding: 40px; box-sizing: border-box;
+            overflow-y: auto; text-align: center;
         }
-        .list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 15px; max-width: 800px; margin: auto; }
-        .time-item { font-size: 1.5rem; font-weight: bold; text-align: center; color: white; }
+        .list-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 20px; }
+        .time-tag { background: #333; color: var(--m-gold); padding: 10px; border-radius: 8px; font-size: 1.5rem; font-weight: bold; }
+        .close-hint { margin-top: 30px; color: #666; font-size: 1rem; }
         .passed { opacity: 0.3; font-weight: normal; } /* 出発済みの便 */
 
         canvas, video { display: none; }
