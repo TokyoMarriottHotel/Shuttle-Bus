@@ -14,7 +14,12 @@
         }
         
         body { 
-            font-family: "Montserrat", "Noto Sans JP", -apple-system, sans-serif; 
+            body { 
+    /* Effraがない環境でも綺麗に見えるよう、Montserratやsans-serifをバックアップに指定 */
+    font-family: "Effra", "Montserrat", "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; 
+    background: var(--bg); 
+    margin: 0; padding: 20px; color: #333; padding-bottom: 120px; 
+} 
             background: var(--bg); 
             margin: 0; padding: 20px; color: #333; padding-bottom: 120px; 
         }
@@ -61,6 +66,8 @@
         }
 
         .fs-time { font-size: 32vw; font-weight: 800; line-height: 1; font-family: "Montserrat", sans-serif; }
+        font-family: "Effra", "Montserrat", sans-serif; 
+}
 
         /* 時刻表リスト */
         #fsTimetableList { 
